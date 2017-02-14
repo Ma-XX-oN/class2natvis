@@ -4,8 +4,10 @@ Converts classes/structs to a natvis format.
 
 ## Detail
 Having to convert a class or a struct to a natvis type representation is a bit
-of a PITA if you want to include all of the elements and want to be reminded as
-to what the types are being represented.
+of a PITA if you want to include all of the elements, want to be reminded as
+to what the types are being represented, get rid of all the function
+declarations/definitions and convert any comments or anything not recognised to
+comments.
 
 This uses [AutoHotKey][1] to aid in quickly trying to convert
 classes/structures into a format which is still fairly readable.
@@ -39,6 +41,30 @@ editor, in any file.
   1. Go to your system tray and find the green H icon.
   2. Right click on it and select `Reload This Script`.
 5. Now try it out! :)
+
+## Test case
+```c++
+class testClass : public baseClass
+{
+  int function(LPCTSTR param1);
+  int function(LPCTSTR param2, int value)
+  {
+    /* some code here */
+  }
+  LPCSTR const strings[3];  // some LPCSTR strings
+}
+```
+
+```xml
+<Type Name='testClass'>
+  <DisplayString ExcludeView='preview'>{*this, view(preview)}</DisplayString>
+  <Expand>
+    <Item Name='baseClass [base]' ExcludeView='preview'>(baseClass*)this, nd</Item>
+    <!-- LPCSTR const [3] -->
+    <Item Name='strings'>strings</Item>  <!-- some LPCSTR strings -->
+  </Expand>
+</Type>
+```
 
 ## Caveats
 At the moment, this doesn't recognise function pointers or nested

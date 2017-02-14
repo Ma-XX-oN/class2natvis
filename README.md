@@ -18,8 +18,8 @@ Highlight a complete copy of the class/struct where you want it to be
 converted, and then press Ctrl-Shift-2.  This will then replace the highlighted
 copy with the natvis <Type> block.
 
-The indent character is the whitespace located directly to the left of the
-class/struct definition.
+The indent character(s) is/are the leading whitespace(s) located directly to
+the left of the class/struct definition.
 
 I normally do this directly in my .natvis file, but this will work in any
 editor, in any file.

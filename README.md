@@ -29,9 +29,11 @@ editor, in any file.
 2. Download and install [AutoHotKey][1] if you haven't already.
 3. In your %USERPROFILE%\Documents\AutoHotKey.ahk file, add to the end of the
    file:
-    ```
-    #include %A_LineFile%\..\class2natvis\natvis.ahk
-    ```
+
+   ```
+   #include %A_LineFile%\..\class2natvis\natvis.ahk
+   ```
+
    and save it.
 4. Reload the AHK script
   1. Go to your system tray and find the green H icon.

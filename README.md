@@ -42,7 +42,7 @@ editor, in any file.
   2. Right click on it and select `Reload This Script`.
 5. Now try it out! :)
 
-## Test case
+## Test Case
 ```c++
 class testClass : public baseClass
 {

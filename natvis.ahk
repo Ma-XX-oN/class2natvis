@@ -53,6 +53,8 @@ function_re(classname)
 				(?<virtual>(?:virtual\s+)?)                                 ; Gets virtual keyword if any
 				(?:
 					(?<type>
+            (?:decltype\s*+\(([^()]|\((?-1)?\))*+\)) ; deal with decltype types
+            |
 						(?:[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+)
 						(?:::[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+)* ; In case type type needs to be qualified.
 						(?:  ; Backtrack to find the end of the type. Could be the end of the type if one of the following is true:
@@ -124,6 +126,8 @@ class2natvis()
 					(?!typedef|using)
 					(?<static>(?:static\s+)?+)
 					(?<type>
+            (?:decltype\s*+\(([^()]|\((?-1)?\))*+\)) ; deal with decltype types
+            |
 						(?:[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+)
 						(?:::[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+)* ; In case type type needs to be qualified.
 						(?:  ; Backtrack to find the end of the type. Could be the end of the type if one of the following is true:
@@ -293,8 +297,8 @@ class2natvis()
 		}
 		LPCSTR const strings[3];  // some LPCSTR strings
 		int a, b, c; // TODO: Currently only gets last variable
-		ns::tclass<abc> var; // TODO: isn't captured.  Converted into a comment. and XML comment is nested.
-		decltype(x) y;    // TODO: Converted into a comment.
+		ns::tclass<abc> var;
+		decltype(x()) y;
 		χ<decltype(x)> y; // TODO: Converted into a comment.
 	}
 
@@ -302,8 +306,15 @@ class2natvis()
 		<DisplayString ExcludeView='preview'>{*this, view(preview)}</DisplayString>
 		<Expand>
 			<Item Name='baseClass [base]' ExcludeView='preview'>(baseClass*)this, nd</Item>
+			<!-- decltype(x(d)) -->
+			<Item Name='y'>y</Item>
 			<!-- LPCSTR const [3] -->
 			<Item Name='strings'>strings</Item>  <!-- some LPCSTR strings -->
+			<!-- int a, b, -->
+			<Item Name='c'>c</Item> <!-- TODO: Currently only gets last variable -->
+			<!-- ns::tclass<abc> -->
+			<Item Name='var'>var</Item>
+		<!-- χ<decltype(x)> y; <!-- TODO: Converted into a comment. --> -->
 		</Expand>
 	</Type>
 */

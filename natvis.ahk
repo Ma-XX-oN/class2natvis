@@ -54,8 +54,9 @@ function_re(classname)
 				(?:
 					(?<type>
 						(?:[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+)
+						(?:::[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+)* ; In case type type needs to be qualified.
 						(?:  ; Backtrack to find the end of the type. Could be the end of the type if one of the following is true:
-							 (?<=[a-zA-Z_0-9\s])(?=\s+[a-zA-Z_])    ; last char is a letter, number or underscore and the next is one or more whitespece followed by a letter or underscore.
+							 (?<=[a-zA-Z_0-9\s])(?=\s+[a-zA-Z_])    ; last char is a letter, number or underscore and the next is one or more whitespace followed by a letter or underscore.
 							|(?<=[*&>\s])(?=[a-zA-Z_])  ; last char is a whitespace, *, & or > and the next is a whitespace, letter or underscore.
 						`)
 					`)\s*
@@ -74,6 +75,7 @@ function_re(classname)
 }
 
 ; Convert class/struct to natvis format
+; DOESN'T handle nested classes/structs yet.
 class2natvis()
 {
 	local clip := ClipboardAll, value := "", _, _leading, _name, _body, found, _bases, bases := "", className
@@ -123,8 +125,9 @@ class2natvis()
 					(?<static>(?:static\s+)?+)
 					(?<type>
 						(?:[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+)
+						(?:::[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+)* ; In case type type needs to be qualified.
 						(?:  ; Backtrack to find the end of the type. Could be the end of the type if one of the following is true:
-							 (?<=[a-zA-Z_0-9\s])(?=\s+[a-zA-Z_])    ; last char is a letter, number or underscore and the next is one or more whitespece followed by a letter or underscore.
+							 (?<=[a-zA-Z_0-9\s])(?=\s+[a-zA-Z_])    ; last char is a letter, number or underscore and the next is one or more whitespace followed by a letter or underscore.
 							|(?<=[*&>\s])(?=[a-zA-Z_])  ; last char is a whitespace, *, & or > and the next is a whitespace, letter or underscore.
 						`)
 					`)\s*
@@ -155,7 +158,15 @@ class2natvis()
 				mx)
 					(?:<!--\s*-->)
 			)
-		
+    enum_re = 
+      ( LTrim Comment
+        mx)
+          ^\s*enum
+          (?:\s+class)? ; could be an enum class
+          \s+(?:[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+) ; enum type name
+          (?:[^{]*) ; ignore integral type this enum is based on
+          \{[^}]*\}\s*%semicolon% ; enum body
+      )
 		friend_re =
 			( LTrim Comment
 				mx)
@@ -177,6 +188,10 @@ class2natvis()
 			; replace //... comments
 			_body := RegExReplace(_body, "// ?([^\r\n]*)", "<!-- $1 -->")
 			;msgbox Replaces comments 2:`n%_body%
+			
+			; replace nested enum declarations with nothing
+			_body := RegExReplace(_body, enum_re, "")
+			;msgbox Replace function definitions/declarations:`n%_body%
 			
 			; replace friend declarations with nothing
 			_body := RegExReplace(_body, friend_re, "")
@@ -277,6 +292,10 @@ class2natvis()
 			/* some code here */
 		}
 		LPCSTR const strings[3];  // some LPCSTR strings
+		int a, b, c; // TODO: Currently only gets last variable
+		ns::tclass<abc> var; // TODO: isn't captured.  Converted into a comment. and XML comment is nested.
+		decltype(x) y;    // TODO: Converted into a comment.
+		χ<decltype(x)> y; // TODO: Converted into a comment.
 	}
 
 	<Type Name='testClass'>

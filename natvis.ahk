@@ -1,8 +1,8 @@
 ﻿; This is a AutoHotKey script that converts a C++ class/struct to a natvis
 ; type declaration, 
 ;
-; To use, highlight the class/struct from begining to end and then press ALT-
-; SHIFT-2.  This will then be replace with corrisponding natvis definition.
+; To use, highlight the class/struct from beginning to end and then press ALT-
+; SHIFT-2.  This will then be replace with corresponding natvis definition.
 ;
 ; The following list the changes made:
 ;
@@ -21,10 +21,10 @@
 ; Anything not understood will be surrounded in XML comments.
 ;
 ; TODO:
-;   1. Currently dones't recognise function pointers.
+;   1. Currently doesn't recognize function pointers.
 ;   2. If there are a set of consecutive minus signs in a comment, they will be
 ;      not removed or modified, resulting in invalid XML.
-;   3. Annomyous structs/class in a class/struct will get partially converted
+;   3. Anonymous structs/class in a class/struct will get partially converted
 ;      as if part of the containing class/struct.
 ;
 ; LOG:
@@ -58,23 +58,23 @@ function_re(classname)
           (?<type>
             (?<cv_qualifier>const\s++|volitile\s++)*+
             (?:
-              (?:decltype\s*+\(([^()]|\((?-1)?\))*+\))        ; deal with decltype types
-             |(?:[a-zA-Z_][a-zA-Z0-9_]*+\s*+                  
-              (?:<\s*+                                        ; May have a template parameter list
-                (?<template_param>                            
-                   \g<type>                                   ; Template type parameter (can be empty)
-                  |(?:[^<>(),]*+                              ;  Consists of either an equation not containing any "<>()," chars,
-                    (?:\(([^()]|\((?-1)?\))*+\))?             ;  which may be followed by a parenthesized equation that may have <> or anything else,
-                   `)*+                                       ;  which may be repeated 0 or more times.  NOTE: doesn't validate the equation. 
-                `)                                            
-                (?:,\s*+\g<template_param>)*+                 ; Template may have more than one. NOTE: Doesn't validate that previous parameter is not empty.
-              \s*+>)?+)                                       
-              (?: :: \g<type>)*+                              ; In case type type is scope resolved.
-              (?:\g<cv_qualifier>|[*\s])*+                    ; 0 or more pointers or cv qualifiers.
-              \&?                                             ; 0 or 1 reference.
+              (?:decltype\s*+\(([^()]|\((?-1)?\))*+\))              ; deal with decltype types
+             |(?:[a-zA-Z_][a-zA-Z0-9_]*+\s*+                        
+              (?:<\s*+                                              ; May have a template parameter list
+                (?<template_param>                                  
+                   \g<type>                                         ; Template type parameter (can be empty)
+                  |(?:[^<>(),]*+                                    ;  Consists of either an equation not containing any "<>()," chars,
+                    (?:\(([^()]|\((?-1)?\))*+\))?                   ;  which may be followed by a parenthesized equation that may have <> or anything else,
+                   `)*+                                             ;  which may be repeated 0 or more times.  NOTE: doesn't validate the equation. 
+                `)                                                  
+                (?:,\s*+\g<template_param>)*+                       ; Template may have more than one. NOTE: Doesn't validate that previous parameter is not empty.
+              \s*+>)?+)                                             
+              (?: :: \g<type>)*+                                    ; In case type type is scope resolved.
+              (?:\g<cv_qualifier>|[*\s])*+                          ; 0 or more pointers or cv qualifiers.
+              \&?                                                   ; 0 or 1 reference.
             `)
           `)\s*                                                
-          (*PRUNE) ; after this, if it fails, it fails.  No more backtracking.
+          (*PRUNE)                                                  ; No backtracking before this.
           (?<name>(?>operator\s*(?:->\*?|\&\&|\|\||\+\+|--|[-+*/`%ˆ&|!=<>]=?|[~,]|(?:<<|>>)=?|\(\s*\)|\[\s*\]|"")|[a-zA-Z_][a-zA-Z_0-9]*))\s*                          ; Gets name of function
           | ~?%classname%
 
@@ -113,7 +113,7 @@ class2natvis()
     classInfo_re = 
       ( LTrim Comment
         mxJ)
-          ^(?<leading>[ \t]*+)                     ; Gets leading whitespace on the line.
+          ^(?<leading>[ \t]*+)                         ; Gets leading whitespace on the line.
           (
               (?:class|struct)\s+(?<name>[a-zA-Z_][a-zA-Z0-9_]*+)\s*  ; Gets the class name.
               (?::\s*(?<bases>(?:[^{]*))|(?<bases>))
@@ -126,7 +126,7 @@ class2natvis()
               \{(?<body>(?>(?:[^{}])|\{(?-1)\})*+)\}   ; Extract the body out of the class.
               \s*(?<name>[a-zA-Z_][a-zA-Z0-9_]*)       ; extract the name out of the typedef
           `)
-          \s*%semicolon%?                          ; Wipe any trailing ';' if found.
+          \s*%semicolon%?                              ; Wipe any trailing ';' if found.
       )
     base_re =
       ( LTrim Comment
@@ -160,7 +160,7 @@ class2natvis()
               \&?                                             ; 0 or 1 reference.
             `)
           `)\s*                                                
-          (*PRUNE)                                            ; No more backtracking before this.
+          (*PRUNE)                                            ; No backtracking before this.
           (?<var>(?>[a-zA-Z_][a-zA-Z_0-9]*)(?<!operator))\s*+ ; Variable name.
           (?<array>(?:\[[^\]]*+])*+)\s*                       ; 0 or more array dimensions.
           (?::\s*+\d*+\s*+)?+                                 ; Bit field
@@ -249,13 +249,13 @@ class2natvis()
       ;msgbox Replace blank lines:`n%_body%
 
       ;tooltip %_body%
-      ; replace all other things not recognised as comments
-      _body := RegExReplace(_body, unrecognised_re, "${leading}<!-- ${unrecognised} -->")
-      ;msgbox Replaces unrecognised:`n%_body%
+      ; replace all other things not recognized as comments
+      _body := RegExReplace(_body, unrecognised_re, "${leading}<!-- ${unrecognized} -->")
+      ;msgbox Replaces unrecognized:`n%_body%
 
       ; Replace nested comments with unnested comments
       _body := RegExReplace(_body, fixNested_re, "${leftOuter}-->${inner}<!--${rightOuter}")
-      ;msgbox Replacss nested comments:`n%_body%
+      ;msgbox Replaces nested comments:`n%_body%
 
       ; Replace empty comments with nothing
       _body := RegExReplace(_body, emptyComment_re, "")

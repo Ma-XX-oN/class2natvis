@@ -3,8 +3,10 @@
 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
+
 DebugRegEx(Match, CalloutNumber, FoundPos, Haystack, NeedleRegEx)
 {
+    static debug_counter := 0
     ; See pcre.txt for descriptions of these fields.
     start_match       := NumGet(A_EventInfo, 12 + A_PtrSize*2, "Int")
     current_position  := NumGet(A_EventInfo, 16 + A_PtrSize*2, "Int")
@@ -25,5 +27,5 @@ DebugRegEx(Match, CalloutNumber, FoundPos, Haystack, NeedleRegEx)
     ;ListVars
     ; Press Pause to continue.
     ;Pause
-	msgbox % "Needle:`r`n" . _NEEDLE . "`r`n`r`nHaystack:`r`n" . _HAYSTACK
+	msgbox % "Step: " . debug_counter++ . "`r`nNeedle:`r`n" . _NEEDLE . "`r`n`r`nHaystack:`r`n" . _HAYSTACK
 }

@@ -55,12 +55,19 @@ function_re(classname)
 					(?<type>
             (?:decltype\s*+\(([^()]|\((?-1)?\))*+\)) ; deal with decltype types
             |
-						(?:[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+)
-						(?:::[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+)* ; In case type type needs to be qualified.
-						(?:  ; Backtrack to find the end of the type. Could be the end of the type if one of the following is true:
-							 (?<=[a-zA-Z_0-9\s])(?=\s+[a-zA-Z_])    ; last char is a letter, number or underscore and the next is one or more whitespace followed by a letter or underscore.
-							|(?<=[*&>\s])(?=[a-zA-Z_])  ; last char is a whitespace, *, & or > and the next is a whitespace, letter or underscore.
-						`)
+						(?:[a-zA-Z_][a-zA-Z0-9_]*+\s*+
+            (?:<\s*+                            ; May have a template parameter list
+              (?<template_param>
+                 \g<type>                       ; Template type parameter (can be empty)
+                |(?:[^<>(),]*+                  ;  Consists of either an equation not containing any "<>()," chars,
+                  (?:\(([^()]|\((?-1)?\))*+\))? ;  which may be followed by a parenthesized equation that may have <> or anything else,
+                 `)*+                           ;  which may be repeated 0 or more times.  NOTE: doesn't validate the equation. 
+              `)
+              (?:,\s*+\g<template_param>)*+     ; Template may have more than one. NOTE: Doesn't validate that previous parameter is not empty.
+            \s*+>)?+)
+						(?:::\g<type>)*+ ; In case type type needs to be qualified.
+            [*\s]*+          ; zero or more pointers
+            \&?              ; 0 or 1 reference
 					`)\s*
 					(*PRUNE) ; after this, if it fails, it fails.  No more backtracking.
 					(?<name>(?>operator\s*(?:->\*?|\&\&|\|\||\+\+|--|[-+*/`%ˆ&|!=<>]=?|[~,]|(?:<<|>>)=?|\(\s*\)|\[\s*\]|"")|[a-zA-Z_][a-zA-Z_0-9]*))\s*                          ; Gets name of function
@@ -83,7 +90,11 @@ class2natvis()
 	local clip := ClipboardAll, value := "", _, _leading, _name, _body, found, _bases, bases := "", className
 		, __, __end := "", __static := "", __className, __assignment := "", one_item, additional
 
-	; Set the default callout function for use when debugging regular expressions
+	; Set the default callout function for use when debugging regular expressions.
+  ;
+  ; To use, add the capital letter C to the options list.  A message box will
+  ; appear with what part of the needle it is looking at and what part of the
+  ; haystack it has found.
 	pcre_callout = DebugRegEx
 
 	clipboard := ""
@@ -128,12 +139,19 @@ class2natvis()
 					(?<type>
             (?:decltype\s*+\(([^()]|\((?-1)?\))*+\)) ; deal with decltype types
             |
-						(?:[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+)
-						(?:::[a-zA-Z_](?>[a-zA-Z0-9_]+|[<>*&,\s]+)+)* ; In case type type needs to be qualified.
-						(?:  ; Backtrack to find the end of the type. Could be the end of the type if one of the following is true:
-							 (?<=[a-zA-Z_0-9\s])(?=\s+[a-zA-Z_])    ; last char is a letter, number or underscore and the next is one or more whitespace followed by a letter or underscore.
-							|(?<=[*&>\s])(?=[a-zA-Z_])  ; last char is a whitespace, *, & or > and the next is a whitespace, letter or underscore.
-						`)
+						(?:[a-zA-Z_][a-zA-Z0-9_]*+\s*+
+            (?:<\s*+                            ; May have a template parameter list
+              (?<template_param>
+                 \g<type>                       ; Template type parameter (can be empty)
+                |(?:[^<>(),]*+                  ;  Consists of either an equation not containing any "<>()," chars,
+                  (?:\(([^()]|\((?-1)?\))*+\))? ;  which may be followed by a parenthesized equation that may have <> or anything else,
+                 `)*+                           ;  which may be repeated 0 or more times.  NOTE: doesn't validate the equation. 
+              `)
+              (?:,\s*+\g<template_param>)*+     ; Template may have more than one. NOTE: Doesn't validate that previous parameter is not empty.
+            \s*+>)?+)
+						(?:::\g<type>)*+ ; In case type type needs to be qualified.
+            [*\s]*+          ; zero or more pointers
+            \&?              ; 0 or 1 reference
 					`)\s*
 					(*PRUNE) ; after this, if it fails, it fails.  No more backtracking.
 					(?<var>(?>[a-zA-Z_][a-zA-Z_0-9]*)(?<!operator))\s*+
@@ -296,25 +314,49 @@ class2natvis()
 			/* some code here */
 		}
 		LPCSTR const strings[3];  // some LPCSTR strings
-		int a, b, c; // TODO: Currently only gets last variable
+		int a, b, c;           // Converts list of vars.
 		ns::tclass<abc> var;
-		decltype(x()) y;
-		χ<decltype(x)> y; // TODO: Converted into a comment.
+		decltype(x()) y;       // Takes decltypes
+		X<decltype(x)> y2;     // Takes templates with arbitrary parameters
+		X<(x < 4),a, b<c>> y3;
+		X<> y4;
+    
+    struct a : b, c   // TODO: Does not handle nested struct/class yet.
+    {
+      int x = 3, y;
+      type z;
+    }
 	}
 
 	<Type Name='testClass'>
 		<DisplayString ExcludeView='preview'>{*this, view(preview)}</DisplayString>
 		<Expand>
 			<Item Name='baseClass [base]' ExcludeView='preview'>(baseClass*)this, nd</Item>
-			<!-- decltype(x(d)) -->
-			<Item Name='y'>y</Item>
-			<!-- LPCSTR const [3] -->
-			<Item Name='strings'>strings</Item>  <!-- some LPCSTR strings -->
-			<!-- int a, b, -->
-			<Item Name='c'>c</Item> <!-- TODO: Currently only gets last variable -->
+		<!-- LPCSTR const strings[3]; --><!-- some LPCSTR strings -->
+			<!-- int -->
+			<Item Name='a'>a</Item>
+			<!-- int -->
+			<Item Name='b'>b</Item>
+			<!-- int -->
+			<Item Name='c'>c</Item>           <!-- Converts list of vars. -->
 			<!-- ns::tclass<abc> -->
 			<Item Name='var'>var</Item>
-		<!-- χ<decltype(x)> y; <!-- TODO: Converted into a comment. --> -->
+			<!-- decltype(x()) -->
+			<Item Name='y'>y</Item>       <!-- Takes decltypes -->
+			<!-- X<decltype(x)> -->
+			<Item Name='y2'>y2</Item>     <!-- Takes templates with arbitrary parameters -->
+			<!-- X<(x < 4),a, b<c>> -->
+			<Item Name='y3'>y3</Item>
+			<!-- X<> -->
+			<Item Name='y4'>y4</Item>
+    <!-- struct a : b, c --><!-- TODO: Does not handle nested struct/class yet. -->
+    <!-- { -->
+			<!-- int (default = 3, y) -->
+			<Item Name='x'>x</Item>
+			<!-- type -->
+			<Item Name='z'>z</Item>
+    <!-- } -->
 		</Expand>
 	</Type>
+
 */
